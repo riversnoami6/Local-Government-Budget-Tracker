@@ -6,12 +6,16 @@
 (define-constant ERR-ALREADY-APPROVED (err u105))
 (define-constant ERR-BUDGET-EXPIRED (err u106))
 (define-constant ERR-PROPOSAL-NOT-FOUND (err u107))
+(define-constant ERR-TRANSFER-NOT-FOUND (err u108))
+(define-constant ERR-INSUFFICIENT-AVAILABLE-BUDGET (err u109))
+(define-constant ERR-SAME-DEPARTMENT-TRANSFER (err u110))
 
 (define-data-var contract-owner principal tx-sender)
 (define-data-var next-budget-id uint u1)
 (define-data-var next-department-id uint u1)
 (define-data-var next-expense-id uint u1)
 (define-data-var next-proposal-id uint u1)
+(define-data-var next-transfer-id uint u1)
 
 (define-map budgets
     { budget-id: uint }
@@ -83,6 +87,21 @@
     {
         is-authorized: bool,
         role: (string-ascii 30),
+    }
+)
+
+(define-map budget-transfers
+    { transfer-id: uint }
+    {
+        from-budget-id: uint,
+        to-budget-id: uint,
+        amount: uint,
+        reason: (string-ascii 200),
+        requested-by: principal,
+        requested-at: uint,
+        is-approved: bool,
+        approved-by: (optional principal),
+        approved-at: (optional uint),
     }
 )
 
@@ -318,6 +337,92 @@
     )
 )
 
+(define-public (request-budget-transfer
+        (from-budget-id uint)
+        (to-budget-id uint)
+        (amount uint)
+        (reason (string-ascii 200))
+    )
+    (let (
+            (from-budget (unwrap! (map-get? budgets { budget-id: from-budget-id })
+                ERR-BUDGET-NOT-FOUND
+            ))
+            (to-budget (unwrap! (map-get? budgets { budget-id: to-budget-id })
+                ERR-BUDGET-NOT-FOUND
+            ))
+            (transfer-id (var-get next-transfer-id))
+            (available-amount (- (get allocated-amount from-budget) (get spent-amount from-budget)))
+        )
+        (asserts! (is-authorized-official tx-sender) ERR-NOT-AUTHORIZED)
+        (asserts! (> amount u0) ERR-INVALID-AMOUNT)
+        (asserts! (not (is-eq from-budget-id to-budget-id))
+            ERR-SAME-DEPARTMENT-TRANSFER
+        )
+        (asserts!
+            (not (is-eq (get department-id from-budget) (get department-id to-budget)))
+            ERR-SAME-DEPARTMENT-TRANSFER
+        )
+        (asserts! (<= amount available-amount) ERR-INSUFFICIENT-AVAILABLE-BUDGET)
+        (asserts! (get is-approved from-budget) ERR-NOT-AUTHORIZED)
+        (asserts! (get is-approved to-budget) ERR-NOT-AUTHORIZED)
+        (asserts! (< stacks-block-height (get expires-at from-budget))
+            ERR-BUDGET-EXPIRED
+        )
+        (asserts! (< stacks-block-height (get expires-at to-budget))
+            ERR-BUDGET-EXPIRED
+        )
+        (map-set budget-transfers { transfer-id: transfer-id } {
+            from-budget-id: from-budget-id,
+            to-budget-id: to-budget-id,
+            amount: amount,
+            reason: reason,
+            requested-by: tx-sender,
+            requested-at: stacks-block-height,
+            is-approved: false,
+            approved-by: none,
+            approved-at: none,
+        })
+        (var-set next-transfer-id (+ transfer-id u1))
+        (ok transfer-id)
+    )
+)
+
+(define-public (approve-budget-transfer (transfer-id uint))
+    (let (
+            (transfer (unwrap! (map-get? budget-transfers { transfer-id: transfer-id })
+                ERR-TRANSFER-NOT-FOUND
+            ))
+            (from-budget-id (get from-budget-id transfer))
+            (to-budget-id (get to-budget-id transfer))
+            (amount (get amount transfer))
+            (from-budget (unwrap! (map-get? budgets { budget-id: from-budget-id })
+                ERR-BUDGET-NOT-FOUND
+            ))
+            (to-budget (unwrap! (map-get? budgets { budget-id: to-budget-id })
+                ERR-BUDGET-NOT-FOUND
+            ))
+            (available-amount (- (get allocated-amount from-budget) (get spent-amount from-budget)))
+        )
+        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (asserts! (not (get is-approved transfer)) ERR-ALREADY-APPROVED)
+        (asserts! (<= amount available-amount) ERR-INSUFFICIENT-AVAILABLE-BUDGET)
+        (map-set budget-transfers { transfer-id: transfer-id }
+            (merge transfer {
+                is-approved: true,
+                approved-by: (some tx-sender),
+                approved-at: (some stacks-block-height),
+            })
+        )
+        (map-set budgets { budget-id: from-budget-id }
+            (merge from-budget { allocated-amount: (- (get allocated-amount from-budget) amount) })
+        )
+        (map-set budgets { budget-id: to-budget-id }
+            (merge to-budget { allocated-amount: (+ (get allocated-amount to-budget) amount) })
+        )
+        (ok true)
+    )
+)
+
 (define-read-only (get-budget (budget-id uint))
     (map-get? budgets { budget-id: budget-id })
 )
@@ -366,7 +471,32 @@
         total-departments: (- (var-get next-department-id) u1),
         total-expenses: (- (var-get next-expense-id) u1),
         total-proposals: (- (var-get next-proposal-id) u1),
+        total-transfers: (- (var-get next-transfer-id) u1),
         contract-owner: (var-get contract-owner),
         current-block: stacks-block-height,
     }
+)
+
+(define-read-only (get-budget-transfer (transfer-id uint))
+    (map-get? budget-transfers { transfer-id: transfer-id })
+)
+
+(define-read-only (get-department-budget-summary (department-id uint))
+    (let ((department (map-get? departments { department-id: department-id })))
+        (match department
+            dept (let (
+                    (total-allocated u0)
+                    (total-spent u0)
+                )
+                (some {
+                    department-name: (get name dept),
+                    is-active: (get is-active dept),
+                    total-allocated: total-allocated,
+                    total-spent: total-spent,
+                    available: (- total-allocated total-spent),
+                })
+            )
+            none
+        )
+    )
 )
