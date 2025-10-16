@@ -4,14 +4,14 @@
   "description": "Smart contract system for tracking local government budget allocations, expenditures, and proposals",
   "main": "index.js",
   "scripts": {
-    "test": "clarinet test",
-    "check": "clarinet check",
+    "test": "clarinet check contracts/budget-tracker.clar",
+    "check": "clarinet check contracts/budget-tracker.clar", 
     "console": "clarinet console",
     "format": "clarinet format"
   },
   "keywords": [
     "blockchain",
-    "smart-contracts",
+    "smart-contracts", 
     "government",
     "budget",
     "transparency",
