@@ -1,0 +1,12 @@
+[project]
+name = "budget-tracker"
+description = "Local Government Budget Tracker smart contract"
+authors = ["riversnoami6"]
+telemetry = false
+
+[contracts.budget-tracker]
+path = "contracts/budget-tracker.clar"
+
+[repl]
+costs_version = 3
+parser_version = 2
