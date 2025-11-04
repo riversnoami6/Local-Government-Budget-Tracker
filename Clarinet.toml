@@ -7,6 +7,9 @@ telemetry = false
 [contracts.budget-tracker]
 path = "contracts/budget-tracker.clar"
 
+[contracts.gov-motion-registry]
+path = "contracts/gov-motion-registry.clar"
+
 [repl]
 costs_version = 3
 parser_version = 2
