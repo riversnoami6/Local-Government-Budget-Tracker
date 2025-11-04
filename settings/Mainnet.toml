@@ -1,0 +1,5 @@
+[network]
+name = "mainnet"
+
+[accounts.deployer]
+mnemonic = { phrase = "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote", passphrase = "" }

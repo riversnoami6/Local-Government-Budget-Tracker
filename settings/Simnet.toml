@@ -1,0 +1,14 @@
+[network]
+name = "simnet"
+
+[accounts.deployer]
+mnemonic = { phrase = "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote", passphrase = "" }
+balance = 100000000000000
+
+[accounts.wallet_1]
+mnemonic = { phrase = "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote", passphrase = "" }
+balance = 100000000000000
+
+[accounts.wallet_2]
+mnemonic = { phrase = "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote", passphrase = "" }
+balance = 100000000000000

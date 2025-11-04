@@ -1,0 +1,29 @@
+{
+  "name": "local-government-budget-tracker",
+  "version": "1.0.0",
+  "description": "Smart contract system for tracking local government budget allocations, expenditures, and proposals",
+  "main": "index.js",
+  "scripts": {
+    "test": "clarinet check contracts/budget-tracker.clar",
+    "check": "clarinet check contracts/budget-tracker.clar", 
+    "console": "clarinet console",
+    "format": "clarinet format"
+  },
+  "keywords": [
+    "blockchain",
+    "smart-contracts", 
+    "government",
+    "budget",
+    "transparency",
+    "stacks",
+    "clarity"
+  ],
+  "author": "riversnoami6",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^18.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
